@@ -1,0 +1,38 @@
+# Vercel ignore file - exclude unnecessary files from deployment
+
+# Development files
+*.md
+!README.md
+.env.example
+.env.local
+.env.development
+
+# Documentation
+AUTHENTICATION_IMPLEMENTATION.md
+CONFIGURATION.md
+FILE_UPLOAD_IMPLEMENTATION.md
+PUBLIC_PAGES_IMPLEMENTATION.md
+RUNTIME_CONFIGURATION.md
+SETUP_COMPLETE.md
+TASK_13.3_IMPLEMENTATION_SUMMARY.md
+VERCEL_ADAPTER_NOTE.md
+
+# Tests
+tests/
+*.spec.ts
+*.test.ts
+playwright.config.ts
+playwright-report/
+test-results/
+
+# Development tools
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
