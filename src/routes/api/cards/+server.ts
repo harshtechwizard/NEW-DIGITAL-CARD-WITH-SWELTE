@@ -34,7 +34,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 			return json(
 				{
 					error: 'Validation failed',
-					details: validation.error.errors
+					details: validation.error.issues
 				},
 				{ status: 400 }
 			);
@@ -178,7 +178,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 				'professional-detailed',
 				'custom'
 			]).optional(),
-			fields_config: z.record(z.any()).optional(),
+			fields_config: z.record(z.string(), z.any()).optional(),
 			design_config: z.object({
 				primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i).optional(),
 				fontFamily: z.string().optional(),
@@ -199,7 +199,7 @@ export const PATCH: RequestHandler = async ({ request, locals }) => {
 			return json(
 				{
 					error: 'Validation failed',
-					details: validation.error.errors
+					details: validation.error.issues
 				},
 				{ status: 400 }
 			);

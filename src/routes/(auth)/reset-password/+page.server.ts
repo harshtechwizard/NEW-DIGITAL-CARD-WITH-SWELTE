@@ -41,7 +41,7 @@ export const actions: Actions = {
 		const validation = passwordResetRequestSchema.safeParse({ email });
 		
 		if (!validation.success) {
-			const firstError = validation.error.errors[0];
+			const firstError = validation.error.issues[0];
 			return fail(400, {
 				error: firstError?.message || 'Validation failed',
 				email: email || ''

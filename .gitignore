@@ -45,7 +45,7 @@ playwright/.cache/
 *.sw?
 *.swp
 *~
-
+.kiro/
 # OS files
 Thumbs.db
 .DS_Store

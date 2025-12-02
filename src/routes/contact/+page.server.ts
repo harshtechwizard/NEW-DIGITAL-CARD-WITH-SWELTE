@@ -32,7 +32,7 @@ export const actions: Actions = {
 		const validation = contactSchema.safeParse({ name, email, subject, message });
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0].message,
+				error: validation.error.issues[0].message,
 				name,
 				email,
 				subject,
@@ -73,3 +73,4 @@ export const actions: Actions = {
 		}
 	}
 };
+

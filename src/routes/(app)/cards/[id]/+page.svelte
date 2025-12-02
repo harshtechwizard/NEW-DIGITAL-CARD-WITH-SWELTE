@@ -32,34 +32,44 @@
 	let successMessage = $state('');
 
 	// Pre-fill field configuration state with existing data
+	// Handle case where fields_config might be null or not an object
+	const fieldsConfig = (data.card.fields_config && typeof data.card.fields_config === 'object') 
+		? data.card.fields_config as any 
+		: {};
+	
 	let selectedFields = $state({
-		full_name: data.card.fields_config?.full_name ?? true,
-		primary_email: data.card.fields_config?.primary_email ?? true,
-		mobile_number: data.card.fields_config?.mobile_number ?? false,
-		alternate_mobile: data.card.fields_config?.alternate_mobile ?? false,
-		whatsapp_number: data.card.fields_config?.whatsapp_number ?? false,
-		bio: data.card.fields_config?.bio ?? false,
-		profile_photo_url: data.card.fields_config?.profile_photo_url ?? false,
-		social_instagram: data.card.fields_config?.social_instagram ?? false,
-		social_facebook: data.card.fields_config?.social_facebook ?? false,
-		social_linkedin: data.card.fields_config?.social_linkedin ?? false,
-		professionalIds: data.card.fields_config?.professionalIds || [],
-		linkedin_urls: data.card.fields_config?.linkedin_urls || [],
-		professional_emails: data.card.fields_config?.professional_emails || [],
-		professional_phones: data.card.fields_config?.professional_phones || [],
-		professional_instagrams: data.card.fields_config?.professional_instagrams || [],
-		professional_facebooks: data.card.fields_config?.professional_facebooks || [],
-		educationIds: data.card.fields_config?.educationIds || [],
-		awardIds: data.card.fields_config?.awardIds || [],
-		productServiceIds: data.card.fields_config?.productServiceIds || [],
-		photoIds: data.card.fields_config?.photoIds || []
+		full_name: fieldsConfig.full_name ?? true,
+		primary_email: fieldsConfig.primary_email ?? true,
+		mobile_number: fieldsConfig.mobile_number ?? false,
+		alternate_mobile: fieldsConfig.alternate_mobile ?? false,
+		whatsapp_number: fieldsConfig.whatsapp_number ?? false,
+		bio: fieldsConfig.bio ?? false,
+		profile_photo_url: fieldsConfig.profile_photo_url ?? false,
+		social_instagram: fieldsConfig.social_instagram ?? false,
+		social_facebook: fieldsConfig.social_facebook ?? false,
+		social_linkedin: fieldsConfig.social_linkedin ?? false,
+		professionalIds: Array.isArray(fieldsConfig.professionalIds) ? fieldsConfig.professionalIds : [],
+		linkedin_urls: Array.isArray(fieldsConfig.linkedin_urls) ? fieldsConfig.linkedin_urls : [],
+		professional_emails: Array.isArray(fieldsConfig.professional_emails) ? fieldsConfig.professional_emails : [],
+		professional_phones: Array.isArray(fieldsConfig.professional_phones) ? fieldsConfig.professional_phones : [],
+		professional_instagrams: Array.isArray(fieldsConfig.professional_instagrams) ? fieldsConfig.professional_instagrams : [],
+		professional_facebooks: Array.isArray(fieldsConfig.professional_facebooks) ? fieldsConfig.professional_facebooks : [],
+		educationIds: Array.isArray(fieldsConfig.educationIds) ? fieldsConfig.educationIds : [],
+		awardIds: Array.isArray(fieldsConfig.awardIds) ? fieldsConfig.awardIds : [],
+		productServiceIds: Array.isArray(fieldsConfig.productServiceIds) ? fieldsConfig.productServiceIds : [],
+		photoIds: Array.isArray(fieldsConfig.photoIds) ? fieldsConfig.photoIds : []
 	});
 
 	// Pre-fill design configuration state with existing data
+	// Handle case where design_config might be null or not an object
+	const designCfg = (data.card.design_config && typeof data.card.design_config === 'object') 
+		? data.card.design_config as any 
+		: {};
+	
 	let designConfig = $state({
-		primaryColor: data.card.design_config?.primaryColor || '#3b82f6',
-		fontFamily: data.card.design_config?.fontFamily || 'Inter',
-		layout: (data.card.design_config?.layout || 'vertical') as 'vertical' | 'horizontal'
+		primaryColor: designCfg.primaryColor || '#3b82f6',
+		fontFamily: designCfg.fontFamily || 'Inter',
+		layout: (designCfg.layout || 'vertical') as 'vertical' | 'horizontal'
 	});
 
 	const isProfileComplete = $derived(

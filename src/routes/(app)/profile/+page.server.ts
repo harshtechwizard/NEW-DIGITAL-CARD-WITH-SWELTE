@@ -61,7 +61,7 @@ export const actions: Actions = {
 		const validation = personalInfoSchema.safeParse(data);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0]?.message || 'Validation failed',
+				error: validation.error.issues[0]?.message || 'Validation failed',
 				fields: data
 			});
 		}
@@ -111,7 +111,7 @@ export const actions: Actions = {
 		const validation = professionalInfoSchema.safeParse(data);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0]?.message || 'Validation failed',
+				error: validation.error.issues[0]?.message || 'Validation failed',
 				fields: data
 			});
 		}
@@ -186,7 +186,7 @@ export const actions: Actions = {
 		const validation = educationSchema.safeParse(processedData);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0]?.message || 'Validation failed',
+				error: validation.error.issues[0]?.message || 'Validation failed',
 				fields: data
 			});
 		}
@@ -255,7 +255,7 @@ export const actions: Actions = {
 		const validation = awardSchema.safeParse(data);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0]?.message || 'Validation failed',
+				error: validation.error.issues[0]?.message || 'Validation failed',
 				fields: data
 			});
 		}
@@ -324,7 +324,7 @@ export const actions: Actions = {
 		const validation = productServiceSchema.safeParse(data);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0]?.message || 'Validation failed',
+				error: validation.error.issues[0]?.message || 'Validation failed',
 				fields: data
 			});
 		}
@@ -399,7 +399,7 @@ export const actions: Actions = {
 		const validation = photoGallerySchema.safeParse(processedData);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.errors[0]?.message || 'Validation failed',
+				error: validation.error.issues[0]?.message || 'Validation failed',
 				fields: data
 			});
 		}
@@ -454,3 +454,4 @@ export const actions: Actions = {
 		return { success: true, message: 'Photo deleted successfully' };
 	}
 };
+

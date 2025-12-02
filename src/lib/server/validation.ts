@@ -12,11 +12,11 @@ import { z } from 'zod';
  */
 export const loginSchema = z.object({
 	email: z
-		.string({ required_error: 'Email is required' })
+		.string({ message: 'Email is required' })
 		.email('Invalid email address')
 		.max(255, 'Email is too long'),
 	password: z
-		.string({ required_error: 'Password is required' })
+		.string({ message: 'Password is required' })
 		.min(8, 'Password must be at least 8 characters')
 		.max(255, 'Password is too long')
 });
@@ -26,18 +26,18 @@ export const loginSchema = z.object({
  */
 export const signupSchema = z.object({
 	email: z
-		.string({ required_error: 'Email is required' })
+		.string({ message: 'Email is required' })
 		.email('Invalid email address')
 		.max(255, 'Email is too long'),
 	password: z
-		.string({ required_error: 'Password is required' })
+		.string({ message: 'Password is required' })
 		.min(8, 'Password must be at least 8 characters')
 		.max(255, 'Password is too long')
 		.regex(
 			/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
 			'Password must contain at least one uppercase letter, one lowercase letter, and one number'
 		),
-	confirmPassword: z.string({ required_error: 'Please confirm your password' }),
+	confirmPassword: z.string({ message: 'Please confirm your password' }),
 	acceptTerms: z
 		.boolean()
 		.refine((val) => val === true, 'You must accept the terms of service')
@@ -51,7 +51,7 @@ export const signupSchema = z.object({
  */
 export const passwordResetRequestSchema = z.object({
 	email: z
-		.string({ required_error: 'Email is required' })
+		.string({ message: 'Email is required' })
 		.email('Invalid email address')
 		.max(255, 'Email is too long')
 });
@@ -61,14 +61,14 @@ export const passwordResetRequestSchema = z.object({
  */
 export const passwordResetConfirmSchema = z.object({
 	password: z
-		.string({ required_error: 'Password is required' })
+		.string({ message: 'Password is required' })
 		.min(8, 'Password must be at least 8 characters')
 		.max(255, 'Password is too long')
 		.regex(
 			/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
 			'Password must contain at least one uppercase letter, one lowercase letter, and one number'
 		),
-	confirmPassword: z.string({ required_error: 'Please confirm your password' })
+	confirmPassword: z.string({ message: 'Please confirm your password' })
 }).refine((data) => data.password === data.confirmPassword, {
 	message: 'Passwords do not match',
 	path: ['confirmPassword']
@@ -211,7 +211,7 @@ export const photoGallerySchema = z.object({
  */
 export const businessCardSchema = z.object({
 	name: z
-		.string({ required_error: 'Card name is required' })
+		.string({ message: 'Card name is required' })
 		.min(1, 'Card name is required')
 		.max(100, 'Card name is too long'),
 	slug: z
@@ -229,7 +229,7 @@ export const businessCardSchema = z.object({
 		'professional-detailed',
 		'custom'
 	]),
-	fields_config: z.record(z.boolean()).optional(),
+	fields_config: z.record(z.string(), z.boolean()).optional(),
 	design_config: z
 		.object({
 			primaryColor: z

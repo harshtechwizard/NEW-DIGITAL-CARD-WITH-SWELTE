@@ -107,9 +107,11 @@
 					<p class="text-muted-foreground mb-6">
 						Create your first business card to start tracking analytics
 					</p>
-					<a href="/cards/new">
-						<Button>Create Card</Button>
-					</a>
+					<Button href="/cards/new">
+						{#snippet children()}
+							Create Card
+						{/snippet}
+					</Button>
 				</div>
 			</CardContent>
 		</Card>
@@ -121,7 +123,9 @@
 					variant={data.selectedDays === option.value ? 'default' : 'outline'}
 					onclick={() => changeDateRange(option.value)}
 				>
-					{option.label}
+					{#snippet children()}
+						{option.label}
+					{/snippet}
 				</Button>
 			{/each}
 		</div>

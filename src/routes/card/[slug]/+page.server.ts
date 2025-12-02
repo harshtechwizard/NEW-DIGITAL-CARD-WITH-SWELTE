@@ -32,79 +32,10 @@ export const load: PageServerLoad = async ({ params, locals, request, getClientA
 	});
 
 	try {
-		// Fetch card data with all related user information
-		// Using Supabase's query builder with joins for efficient data fetching
+		// Fetch card by slug first
 		const { data: card, error: cardError } = await locals.supabase
 			.from('business_cards')
-			.select(`
-				*,
-				personal_info:user_id (
-					id,
-					user_id,
-					full_name,
-					date_of_birth,
-					primary_email,
-					secondary_email,
-					mobile_number,
-					phone_number,
-					whatsapp_number,
-					home_address,
-					bio,
-					instagram_url,
-					facebook_url,
-					linkedin_url,
-					profile_photo_url
-				),
-				professional_info:professional_info!professional_info_user_id_fkey (
-					id,
-					user_id,
-					designation,
-					company_name,
-					company_website,
-					company_logo_url,
-					office_address,
-					office_email,
-					office_phone,
-					whatsapp_number,
-					department,
-					office_opening_time,
-					office_closing_time,
-					office_days,
-					instagram_url,
-					facebook_url,
-					linkedin_url,
-					is_primary
-				),
-				education:education!education_user_id_fkey (
-					id,
-					degree_name,
-					institution,
-					year_completed,
-					description
-				),
-				awards:awards!awards_user_id_fkey (
-					id,
-					title,
-					issuing_org,
-					date_received,
-					expiry_date,
-					certificate_url
-				),
-				products_services:products_services!products_services_user_id_fkey (
-					id,
-					name,
-					description,
-					category,
-					photo_url,
-					website_link
-				),
-				photo_gallery:photo_gallery!photo_gallery_user_id_fkey (
-					id,
-					photo_url,
-					caption,
-					display_order
-				)
-			`)
+			.select('*')
 			.eq('slug', slug)
 			.eq('is_active', true)
 			.single();
@@ -114,33 +45,77 @@ export const load: PageServerLoad = async ({ params, locals, request, getClientA
 			throw error(404, 'Card not found');
 		}
 
-		// Extract personal info (should be a single object, not array)
-		const personalInfo = Array.isArray(card.personal_info) 
-			? card.personal_info[0] 
-			: card.personal_info;
+		// Fetch related user information separately
+		const userId = card.user_id;
+
+		// Fetch personal info
+		const { data: personalInfo } = await locals.supabase
+			.from('personal_info')
+			.select('*')
+			.eq('user_id', userId)
+			.maybeSingle();
+
+		// Fetch professional info
+		const { data: professionalInfo } = await locals.supabase
+			.from('professional_info')
+			.select('*')
+			.eq('user_id', userId)
+			.order('is_primary', { ascending: false });
+
+		// Fetch education
+		const { data: education } = await locals.supabase
+			.from('education')
+			.select('*')
+			.eq('user_id', userId)
+			.order('year_completed', { ascending: false });
+
+		// Fetch awards
+		const { data: awards } = await locals.supabase
+			.from('awards')
+			.select('*')
+			.eq('user_id', userId)
+			.order('date_received', { ascending: false });
+
+		// Fetch products/services
+		const { data: productsServices } = await locals.supabase
+			.from('products_services')
+			.select('*')
+			.eq('user_id', userId)
+			.order('created_at', { ascending: false });
+
+		// Fetch photo gallery
+		const { data: photoGallery } = await locals.supabase
+			.from('photo_gallery')
+			.select('*')
+			.eq('user_id', userId)
+			.order('display_order', { ascending: true });
 
 		// Generate Open Graph metadata for social media sharing
 		// Extract professional info for richer descriptions
-		const professionalInfo = Array.isArray(card.professional_info) && card.professional_info.length > 0
-			? card.professional_info[0]
+		const primaryProfessionalInfo = professionalInfo && professionalInfo.length > 0
+			? professionalInfo[0]
 			: null;
 
 		// Create a rich description
 		let description = personalInfo?.bio || 'View my digital business card and connect with me.';
-		if (professionalInfo?.designation && professionalInfo?.company_name) {
-			description = `${professionalInfo.designation} at ${professionalInfo.company_name}. ${description}`;
+		if (primaryProfessionalInfo?.designation && primaryProfessionalInfo?.company_name) {
+			description = `${primaryProfessionalInfo.designation} at ${primaryProfessionalInfo.company_name}. ${description}`;
 		}
 
 		const ogData = {
 			title: personalInfo?.full_name || 'Digital Business Card',
 			description: description.slice(0, 200), // Limit to 200 chars for optimal display
-			image: personalInfo?.profile_photo_url || professionalInfo?.company_logo_url || `${url.origin}/default-og-image.png`,
+			image: personalInfo?.profile_photo_url || primaryProfessionalInfo?.company_logo_url || `${url.origin}/default-og-image.png`,
 			url: `${url.origin}/card/${slug}`,
 			type: 'profile'
 		};
 
 		// Generate structured data (JSON-LD) for SEO
-		const structuredData = generateStructuredData(card, personalInfo, url.origin);
+		const structuredData = generateStructuredData(
+			{ ...card, professional_info: professionalInfo }, 
+			personalInfo, 
+			url.origin
+		);
 
 		// Track view asynchronously (don't block page load)
 		// Using buffered analytics ingestion for better performance
@@ -159,11 +134,11 @@ export const load: PageServerLoad = async ({ params, locals, request, getClientA
 			card: {
 				...card,
 				personal_info: personalInfo,
-				professional_info: card.professional_info || [],
-				education: card.education || [],
-				awards: card.awards || [],
-				products_services: card.products_services || [],
-				photo_gallery: card.photo_gallery || []
+				professional_info: professionalInfo || [],
+				education: education || [],
+				awards: awards || [],
+				products_services: productsServices || [],
+				photo_gallery: photoGallery || []
 			} as BusinessCardWithUserInfo,
 			ogData,
 			structuredData

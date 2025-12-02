@@ -139,7 +139,7 @@
 		>
 			<!-- Y-axis -->
 			<g class="y-axis">
-				{#each yTicks() as tick}
+				{#each yTicks as tick}
 					<g transform={`translate(0, ${padding.top + yScale(tick)})`}>
 						<line
 							x1={padding.left}

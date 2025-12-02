@@ -19,7 +19,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		.from('personal_info')
 		.select('full_name, profile_photo_url')
 		.eq('user_id', locals.user!.id)
-		.single();
+		.maybeSingle();
 	
 	return {
 		session: locals.session,
