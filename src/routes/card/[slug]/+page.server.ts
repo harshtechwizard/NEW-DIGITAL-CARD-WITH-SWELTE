@@ -90,6 +90,14 @@ export const load: PageServerLoad = async ({ params, locals, request, getClientA
 			.eq('user_id', userId)
 			.order('display_order', { ascending: true });
 
+		// Fetch custom sections (only active ones)
+		const { data: customSections } = await locals.supabase
+			.from('custom_sections')
+			.select('*')
+			.eq('user_id', userId)
+			.eq('is_active', true)
+			.order('display_order', { ascending: true });
+
 		// Generate Open Graph metadata for social media sharing
 		// Extract professional info for richer descriptions
 		const primaryProfessionalInfo = professionalInfo && professionalInfo.length > 0
@@ -138,7 +146,8 @@ export const load: PageServerLoad = async ({ params, locals, request, getClientA
 				education: education || [],
 				awards: awards || [],
 				products_services: productsServices || [],
-				photo_gallery: photoGallery || []
+				photo_gallery: photoGallery || [],
+				custom_sections: customSections || []
 			} as BusinessCardWithUserInfo,
 			ogData,
 			structuredData

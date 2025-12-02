@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Database } from '$lib/types/database';
 	import Button from '$lib/components/ui/Button.svelte';
+	import ContactInfo from '$lib/components/ContactInfo.svelte';
+	import CustomSection from '$lib/components/CustomSection.svelte';
 
 	type PersonalInfo = Database['public']['Tables']['personal_info']['Row'];
 	type ProfessionalInfo = Database['public']['Tables']['professional_info']['Row'];
@@ -8,6 +10,7 @@
 	type Award = Database['public']['Tables']['awards']['Row'];
 	type ProductService = Database['public']['Tables']['products_services']['Row'];
 	type PhotoGallery = Database['public']['Tables']['photo_gallery']['Row'];
+	type CustomSection = Database['public']['Tables']['custom_sections']['Row'];
 
 	type TemplateType =
 		| 'personal-small'
@@ -62,6 +65,7 @@
 		awards?: Award[];
 		productsServices?: ProductService[];
 		photoGallery?: PhotoGallery[];
+		customSections?: CustomSection[];
 		fieldsConfig?: FieldsConfig;
 		designConfig?: DesignConfig;
 		templateType?: TemplateType;
@@ -74,6 +78,7 @@
 		awards = [],
 		productsServices = [],
 		photoGallery = [],
+		customSections = [],
 		fieldsConfig = {},
 		designConfig = {},
 		templateType = 'professional-small'
@@ -239,214 +244,32 @@
 					</p>
 				{/if}
 
-				<!-- Contact buttons -->
-				<div class="flex flex-wrap justify-center gap-2 sm:gap-3">
-					{#if shouldShowField('primary_email') && personalInfo?.primary_email}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() => (window.location.href = `mailto:${personalInfo.primary_email}`)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"
-									/>
-									<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-								</svg>
-							{/snippet}
-						</Button>
+				<!-- Contact Information -->
+				<div class="w-full max-w-md space-y-4">
+					<!-- Personal Contact -->
+					{#if shouldShowField('primary_email') || shouldShowField('mobile_number') || shouldShowField('whatsapp_number')}
+						<ContactInfo
+							type="personal"
+							email={shouldShowField('primary_email') ? personalInfo?.primary_email : null}
+							phone={shouldShowField('mobile_number') ? personalInfo?.mobile_number : null}
+							whatsapp={shouldShowField('whatsapp_number') ? personalInfo?.whatsapp_number : null}
+							linkedin={shouldShowField('linkedin_url') ? personalInfo?.linkedin_url : null}
+							instagram={shouldShowField('instagram_url') ? personalInfo?.instagram_url : null}
+							facebook={shouldShowField('facebook_url') ? personalInfo?.facebook_url : null}
+						/>
 					{/if}
-					{#if shouldShowField('office_email') && selectedProfessional?.office_email}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() => (window.location.href = `mailto:${selectedProfessional.office_email}`)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"
-									/>
-									<path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('mobile_number') && personalInfo?.mobile_number}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() => (window.location.href = `tel:${personalInfo.mobile_number}`)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('office_phone') && selectedProfessional?.office_phone}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() => (window.location.href = `tel:${selectedProfessional.office_phone}`)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('whatsapp_number') && personalInfo?.whatsapp_number}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-green-200 bg-green-50 text-green-600 hover:bg-green-100 transition"
-							onclick={() => handleWhatsAppClick(personalInfo.whatsapp_number!)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('company_website') && selectedProfessional?.company_website}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() => window.open(selectedProfessional.company_website!, '_blank')}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 20 20"
-									fill="currentColor"
-								>
-									<path
-										fill-rule="evenodd"
-										d="M4.083 9h1.946c.089-1.546.383-2.97.837-4.118A6.004 6.004 0 004.083 9zM10 2a8 8 0 100 16 8 8 0 000-16zm0 2c-.076 0-.232.032-.465.262-.238.234-.497.623-.737 1.182-.389.907-.673 2.142-.766 3.556h3.936c-.093-1.414-.377-2.649-.766-3.556-.24-.56-.5-.948-.737-1.182C10.232 4.032 10.076 4 10 4zm3.971 5c-.089-1.546-.383-2.97-.837-4.118A6.004 6.004 0 0115.917 9h-1.946zm-2.003 2H8.032c.093 1.414.377 2.649.766 3.556.24.56.5.948.737 1.182.233.23.389.262.465.262.076 0 .232-.032.465-.262.238-.234.498-.623.737-1.182.389-.907.673-2.142.766-3.556zm1.166 4.118c.454-1.147.748-2.572.837-4.118h1.946a6.004 6.004 0 01-2.783 4.118zm-6.268 0C6.412 13.97 6.118 12.546 6.03 11H4.083a6.004 6.004 0 002.783 4.118z"
-										clip-rule="evenodd"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('linkedin_url') && (personalInfo?.linkedin_url || selectedProfessional?.linkedin_url)}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() =>
-								window.open(
-									personalInfo?.linkedin_url || selectedProfessional?.linkedin_url!,
-									'_blank'
-								)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 24 24"
-									fill="currentColor"
-								>
-									<path
-										d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('instagram_url') && (personalInfo?.instagram_url || selectedProfessional?.instagram_url)}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() =>
-								window.open(
-									personalInfo?.instagram_url || selectedProfessional?.instagram_url!,
-									'_blank'
-								)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 24 24"
-									fill="currentColor"
-								>
-									<path
-										d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
-					{/if}
-					{#if shouldShowField('facebook_url') && (personalInfo?.facebook_url || selectedProfessional?.facebook_url)}
-						<Button
-							variant="outline"
-							size="icon"
-							class="h-10 w-10 sm:h-12 sm:w-12 rounded-xl sm:rounded-2xl border-slate-200 hover:border-slate-400 transition"
-							onclick={() =>
-								window.open(
-									personalInfo?.facebook_url || selectedProfessional?.facebook_url!,
-									'_blank'
-								)}
-						>
-							{#snippet children()}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									class="w-4 h-4"
-									viewBox="0 0 24 24"
-									fill="currentColor"
-								>
-									<path
-										d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"
-									/>
-								</svg>
-							{/snippet}
-						</Button>
+
+					<!-- Professional Contact -->
+					{#if selectedProfessional && (shouldShowField('office_email') || shouldShowField('office_phone') || shouldShowField('company_website'))}
+						<ContactInfo
+							type="professional"
+							email={shouldShowField('office_email') ? selectedProfessional?.office_email : null}
+							phone={shouldShowField('office_phone') ? selectedProfessional?.office_phone : null}
+							website={shouldShowField('company_website') ? selectedProfessional?.company_website : null}
+							linkedin={shouldShowField('linkedin_url') ? selectedProfessional?.linkedin_url : null}
+							instagram={shouldShowField('instagram_url') ? selectedProfessional?.instagram_url : null}
+							facebook={shouldShowField('facebook_url') ? selectedProfessional?.facebook_url : null}
+						/>
 					{/if}
 				</div>
 
@@ -474,6 +297,15 @@
 				{/if}
 			</div>
 		</div>
+
+		<!-- Custom Sections -->
+		{#if customSections && customSections.length > 0}
+			{#each customSections.filter(s => s.is_active).sort((a, b) => (a.display_order || 0) - (b.display_order || 0)) as section}
+				<div class="relative z-10 px-6 sm:px-10 pb-6 border-t border-slate-200 dark:border-slate-700 pt-6">
+					<CustomSection title={section.title} content={section.content} />
+				</div>
+			{/each}
+		{/if}
 
 		<!-- Education section (for detailed templates) -->
 		{#if shouldShowField('education') && education.length > 0}

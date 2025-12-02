@@ -31,10 +31,15 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 		// Validate input
 		const validation = businessCardSchema.safeParse(body);
 		if (!validation.success) {
+			console.error('❌ Card validation failed:', {
+				body,
+				errors: validation.error.issues
+			});
 			return json(
 				{
 					error: 'Validation failed',
-					details: validation.error.issues
+					details: validation.error.issues,
+					message: validation.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join(', ')
 				},
 				{ status: 400 }
 			);

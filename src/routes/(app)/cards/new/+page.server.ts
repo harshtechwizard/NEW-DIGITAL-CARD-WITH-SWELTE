@@ -48,12 +48,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.eq('user_id', locals.user!.id)
 		.order('display_order', { ascending: true });
 
+	// Fetch custom sections
+	const { data: customSections } = await locals.supabase
+		.from('custom_sections')
+		.select('*')
+		.eq('user_id', locals.user!.id)
+		.order('display_order', { ascending: true });
+
 	return {
 		personalInfo: personalInfo || null,
 		professionalInfo: professionalInfo || [],
 		education: education || [],
 		awards: awards || [],
 		productsServices: productsServices || [],
-		photos: photos || []
+		photos: photos || [],
+		customSections: customSections || []
 	};
 };

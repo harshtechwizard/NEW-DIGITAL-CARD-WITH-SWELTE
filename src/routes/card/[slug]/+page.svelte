@@ -150,6 +150,7 @@
 				awards={data.card.awards}
 				productsServices={data.card.products_services}
 				photoGallery={data.card.photo_gallery}
+				customSections={data.card.custom_sections || []}
 				fieldsConfig={data.card.fields_config}
 				designConfig={data.card.design_config}
 				templateType={data.card.template_type}

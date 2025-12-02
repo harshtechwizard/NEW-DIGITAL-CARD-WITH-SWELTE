@@ -72,22 +72,23 @@ const securityHeadersHandle: Handle = async ({ event, resolve }) => {
 	response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
 	response.headers.set('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 
+	// Content Security Policy (both dev and production)
+	response.headers.set(
+		'Content-Security-Policy',
+		[
+			"default-src 'self'",
+			"script-src 'self' 'unsafe-inline'",
+			"style-src 'self' 'unsafe-inline'",
+			"img-src 'self' data: https: blob:",
+			"font-src 'self' data:",
+			"connect-src 'self' https://*.supabase.co",
+			"frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://www.google.com https://maps.google.com https://www.dailymotion.com https://w.soundcloud.com",
+			"frame-ancestors 'none'"
+		].join('; ')
+	);
+
 	// Production-only headers
 	if (!dev) {
-		// Content Security Policy
-		response.headers.set(
-			'Content-Security-Policy',
-			[
-				"default-src 'self'",
-				"script-src 'self' 'unsafe-inline'",
-				"style-src 'self' 'unsafe-inline'",
-				"img-src 'self' data: https:",
-				"font-src 'self' data:",
-				"connect-src 'self' https://*.supabase.co",
-				"frame-ancestors 'none'"
-			].join('; ')
-		);
-
 		// Strict Transport Security (HTTPS only)
 		response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
 	}

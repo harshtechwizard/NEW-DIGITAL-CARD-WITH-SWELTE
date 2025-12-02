@@ -6,8 +6,10 @@ import {
 	educationSchema,
 	awardSchema,
 	productServiceSchema,
-	photoGallerySchema
+	photoGallerySchema,
+	customSectionSchema
 } from '$lib/server/validation';
+import { sanitizeContent, validateContentSize } from '$lib/server/sanitize';
 import type { UserProfile } from '$lib/types/database';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -24,14 +26,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 		{ data: education },
 		{ data: awards },
 		{ data: productsServices },
-		{ data: photoGallery }
+		{ data: photoGallery },
+		{ data: customSections }
 	] = await Promise.all([
 		locals.supabase.from('personal_info').select('*').eq('user_id', userId).single(),
 		locals.supabase.from('professional_info').select('*').eq('user_id', userId),
 		locals.supabase.from('education').select('*').eq('user_id', userId).order('year_completed', { ascending: false }),
 		locals.supabase.from('awards').select('*').eq('user_id', userId).order('date_received', { ascending: false }),
 		locals.supabase.from('products_services').select('*').eq('user_id', userId).order('created_at', { ascending: false }),
-		locals.supabase.from('photo_gallery').select('*').eq('user_id', userId).order('display_order', { ascending: true })
+		locals.supabase.from('photo_gallery').select('*').eq('user_id', userId).order('display_order', { ascending: true }),
+		locals.supabase.from('custom_sections').select('*').eq('user_id', userId).order('display_order', { ascending: true })
 	]);
 
 	const profile: UserProfile = {
@@ -40,7 +44,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		education: education || [],
 		awards: awards || [],
 		products_services: productsServices || [],
-		photo_gallery: photoGallery || []
+		photo_gallery: photoGallery || [],
+		custom_sections: customSections || []
 	};
 
 	return {
@@ -61,9 +66,18 @@ export const actions: Actions = {
 		const validation = personalInfoSchema.safeParse(data);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.issues[0]?.message || 'Validation failed',
-				fields: data
+				error: validation.error.issues[0]?.message || 'Validation failed'
 			});
+		}
+
+		// Clean data: convert empty strings to null for optional fields
+		const cleanedData: any = {};
+		for (const [key, value] of Object.entries(validation.data)) {
+			if (value === '' || value === null || value === undefined) {
+				cleanedData[key] = null;
+			} else {
+				cleanedData[key] = value;
+			}
 		}
 
 		// Check if personal info exists
@@ -71,30 +85,33 @@ export const actions: Actions = {
 			.from('personal_info')
 			.select('id')
 			.eq('user_id', locals.user.id)
-			.single();
+			.maybeSingle();
 
 		if (existing) {
 			// Update existing
 			const { error } = await locals.supabase
 				.from('personal_info')
-				.update(validation.data)
+				.update(cleanedData)
 				.eq('user_id', locals.user.id);
 
 			if (error) {
-				return fail(500, { error: 'Failed to update personal info' });
+				return fail(500, { error: `Failed to update: ${error.message}` });
 			}
 		} else {
 			// Insert new
 			const { error } = await locals.supabase
 				.from('personal_info')
-				.insert({ ...validation.data, user_id: locals.user.id });
+				.insert({ ...cleanedData, user_id: locals.user.id });
 
 			if (error) {
-				return fail(500, { error: 'Failed to save personal info' });
+				return fail(500, { error: `Failed to save: ${error.message}` });
 			}
 		}
 
-		return { success: true, message: 'Personal info saved successfully' };
+		return {
+			success: true,
+			message: 'Personal information saved successfully'
+		};
 	},
 
 	saveProfessionalInfo: async ({ request, locals }) => {
@@ -111,34 +128,43 @@ export const actions: Actions = {
 		const validation = professionalInfoSchema.safeParse(data);
 		if (!validation.success) {
 			return fail(400, {
-				error: validation.error.issues[0]?.message || 'Validation failed',
-				fields: data
+				error: validation.error.issues[0]?.message || 'Validation failed'
 			});
+		}
+
+		// Clean data: convert empty strings to null
+		const cleanedData: any = {};
+		for (const [key, value] of Object.entries(validation.data)) {
+			if (value === '' || value === null || value === undefined) {
+				cleanedData[key] = null;
+			} else {
+				cleanedData[key] = value;
+			}
 		}
 
 		if (id) {
 			// Update existing
 			const { error } = await locals.supabase
 				.from('professional_info')
-				.update(validation.data)
+				.update(cleanedData)
 				.eq('id', id)
 				.eq('user_id', locals.user.id);
 
 			if (error) {
-				return fail(500, { error: 'Failed to update professional info' });
+				return fail(500, { error: `Failed to update: ${error.message}` });
 			}
 		} else {
 			// Insert new
 			const { error } = await locals.supabase
 				.from('professional_info')
-				.insert({ ...validation.data, user_id: locals.user.id });
+				.insert({ ...cleanedData, user_id: locals.user.id });
 
 			if (error) {
-				return fail(500, { error: 'Failed to save professional info' });
+				return fail(500, { error: `Failed to save: ${error.message}` });
 			}
 		}
 
-		return { success: true, message: 'Professional info saved successfully' };
+		return { success: true, message: 'Professional information saved successfully' };
 	},
 
 	deleteProfessionalInfo: async ({ request, locals }) => {
@@ -260,11 +286,18 @@ export const actions: Actions = {
 			});
 		}
 
+		// Convert empty strings to null for date fields (PostgreSQL requirement)
+		const cleanedData = {
+			...validation.data,
+			date_received: validation.data.date_received === '' ? null : validation.data.date_received,
+			expiry_date: validation.data.expiry_date === '' ? null : validation.data.expiry_date
+		};
+
 		if (id) {
 			// Update existing
 			const { error } = await locals.supabase
 				.from('awards')
-				.update(validation.data)
+				.update(cleanedData)
 				.eq('id', id)
 				.eq('user_id', locals.user.id);
 
@@ -275,7 +308,7 @@ export const actions: Actions = {
 			// Insert new
 			const { error } = await locals.supabase
 				.from('awards')
-				.insert({ ...validation.data, user_id: locals.user.id });
+				.insert({ ...cleanedData, user_id: locals.user.id });
 
 			if (error) {
 				return fail(500, { error: 'Failed to save award' });
@@ -452,6 +485,93 @@ export const actions: Actions = {
 		}
 
 		return { success: true, message: 'Photo deleted successfully' };
+	},
+
+	saveCustomSection: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const id = formData.get('id')?.toString();
+		const data = Object.fromEntries(formData);
+		delete data.id;
+
+		// Convert display_order to number and is_active to boolean
+		const processedData: any = { ...data };
+		if (processedData.display_order) {
+			processedData.display_order = parseInt(processedData.display_order as string);
+		}
+		processedData.is_active = processedData.is_active === 'on';
+
+		// Validate input
+		const validation = customSectionSchema.safeParse(processedData);
+		if (!validation.success) {
+			return fail(400, {
+				error: validation.error.issues[0]?.message || 'Validation failed'
+			});
+		}
+
+		// Validate content size
+		if (!validateContentSize(validation.data.content)) {
+			return fail(400, { error: 'Content is too large (max 50KB)' });
+		}
+
+		// Sanitize HTML content
+		const sanitizedContent = sanitizeContent(validation.data.content);
+		const cleanedData = {
+			...validation.data,
+			content: sanitizedContent
+		};
+
+		if (id) {
+			// Update existing
+			const { error } = await locals.supabase
+				.from('custom_sections')
+				.update(cleanedData)
+				.eq('id', id)
+				.eq('user_id', locals.user.id);
+
+			if (error) {
+				return fail(500, { error: 'Failed to update custom section' });
+			}
+		} else {
+			// Insert new
+			const { error } = await locals.supabase
+				.from('custom_sections')
+				.insert({ ...cleanedData, user_id: locals.user.id });
+
+			if (error) {
+				return fail(500, { error: 'Failed to save custom section' });
+			}
+		}
+
+		return { success: true, message: 'Custom section saved successfully' };
+	},
+
+	deleteCustomSection: async ({ request, locals }) => {
+		if (!locals.user) {
+			return fail(401, { error: 'Unauthorized' });
+		}
+
+		const formData = await request.formData();
+		const id = formData.get('id')?.toString();
+
+		if (!id) {
+			return fail(400, { error: 'ID is required' });
+		}
+
+		const { error } = await locals.supabase
+			.from('custom_sections')
+			.delete()
+			.eq('id', id)
+			.eq('user_id', locals.user.id);
+
+		if (error) {
+			return fail(500, { error: 'Failed to delete custom section' });
+		}
+
+		return { success: true, message: 'Custom section deleted successfully' };
 	}
 };
 

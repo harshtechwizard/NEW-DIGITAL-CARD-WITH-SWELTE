@@ -85,29 +85,29 @@ export const personalInfoSchema = z.object({
 	date_of_birth: z.string().optional().or(z.literal('')),
 	primary_email: z
 		.string()
-		.email('Invalid email address')
 		.max(255)
 		.optional()
-		.or(z.literal('')),
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.includes('@'), 'Invalid email address'),
 	secondary_email: z
 		.string()
-		.email('Invalid email address')
 		.max(255)
 		.optional()
-		.or(z.literal('')),
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.includes('@'), 'Invalid email address'),
 	mobile_number: z
 		.string()
-		.regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
+		.max(20, 'Phone number is too long')
 		.optional()
 		.or(z.literal('')),
 	phone_number: z
 		.string()
-		.regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
+		.max(20, 'Phone number is too long')
 		.optional()
 		.or(z.literal('')),
 	whatsapp_number: z
 		.string()
-		.regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
+		.max(20, 'Phone number is too long')
 		.optional()
 		.or(z.literal('')),
 	bio: z
@@ -117,24 +117,24 @@ export const personalInfoSchema = z.object({
 		.or(z.literal('')),
 	instagram_url: z
 		.string()
-		.url('Invalid URL')
-		.optional()
-		.or(z.literal('')),
-	facebook_url: z
-		.string()
-		.url('Invalid URL')
-		.optional()
-		.or(z.literal('')),
-	linkedin_url: z
-		.string()
-		.url('Invalid URL')
-		.optional()
-		.or(z.literal('')),
-	profile_photo_url: z
-		.string()
-		.url('Invalid URL')
 		.optional()
 		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	facebook_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	linkedin_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	profile_photo_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL')
 });
 
 /**
@@ -143,26 +143,51 @@ export const personalInfoSchema = z.object({
 export const professionalInfoSchema = z.object({
 	designation: z.string().max(100).optional().or(z.literal('')),
 	company_name: z.string().max(100).optional().or(z.literal('')),
-	company_website: z.string().url('Invalid URL').optional().or(z.literal('')),
-	company_logo_url: z.string().url('Invalid URL').optional().or(z.literal('')),
-	office_email: z.string().email('Invalid email address').max(255).optional().or(z.literal('')),
+	company_website: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	company_logo_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	office_email: z
+		.string()
+		.max(255)
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.includes('@'), 'Invalid email address'),
 	office_phone: z
 		.string()
-		.regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
+		.max(20, 'Phone number is too long')
 		.optional()
 		.or(z.literal('')),
 	whatsapp_number: z
 		.string()
-		.regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number')
+		.max(20, 'Phone number is too long')
 		.optional()
 		.or(z.literal('')),
 	department: z.string().max(100).optional().or(z.literal('')),
 	office_opening_time: z.string().optional().or(z.literal('')),
 	office_closing_time: z.string().optional().or(z.literal('')),
 	office_days: z.string().optional().or(z.literal('')),
-	instagram_url: z.string().url('Invalid URL').optional().or(z.literal('')),
-	facebook_url: z.string().url('Invalid URL').optional().or(z.literal('')),
-	linkedin_url: z.string().url('Invalid URL').optional().or(z.literal(''))
+	instagram_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	facebook_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL'),
+	linkedin_url: z
+		.string()
+		.optional()
+		.or(z.literal(''))
+		.refine((val) => !val || val === '' || val.startsWith('http'), 'Invalid URL')
 });
 
 /**
@@ -208,6 +233,7 @@ export const photoGallerySchema = z.object({
 
 /**
  * Business card validation schema
+ * Note: slug is optional for creation (generated server-side), but required for updates
  */
 export const businessCardSchema = z.object({
 	name: z
@@ -221,7 +247,9 @@ export const businessCardSchema = z.object({
 			'Slug must contain only lowercase letters, numbers, and hyphens'
 		)
 		.min(3, 'Slug must be at least 3 characters')
-		.max(100, 'Slug is too long'),
+		.max(100, 'Slug is too long')
+		.optional()
+		.or(z.literal('')), // Allow empty string for server-side generation
 	template_type: z.enum([
 		'personal-small',
 		'personal-detailed',
@@ -229,7 +257,7 @@ export const businessCardSchema = z.object({
 		'professional-detailed',
 		'custom'
 	]),
-	fields_config: z.record(z.string(), z.boolean()).optional(),
+	fields_config: z.record(z.string(), z.any()).optional(), // Changed from z.boolean() to z.any() for flexibility
 	design_config: z
 		.object({
 			primaryColor: z
@@ -248,4 +276,14 @@ export const businessCardSchema = z.object({
 export const fileUploadSchema = z.object({
 	bucket: z.enum(['profile-photos', 'company-logos', 'product-photos', 'gallery-photos']),
 	maxSize: z.number().positive()
+});
+
+/**
+ * Custom section validation schema
+ */
+export const customSectionSchema = z.object({
+	title: z.string().min(1, 'Section title is required').max(100, 'Title is too long'),
+	content: z.string().min(1, 'Section content is required').max(51200, 'Content is too large (max 50KB)'), // 50KB limit
+	display_order: z.number().int().min(0).optional().nullable(),
+	is_active: z.boolean().optional()
 });

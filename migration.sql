@@ -520,3 +520,50 @@ CREATE POLICY "Public can view photos for active cards"
       WHERE is_active = true
     )
   );
+
+
+-- ============================================
+-- CUSTOM SECTIONS TABLE - Rich Content Support
+-- Allows users to add custom rich text sections with embeds
+-- ============================================
+
+-- Custom Sections Table
+CREATE TABLE IF NOT EXISTS custom_sections (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  display_order INTEGER DEFAULT 0,
+  is_active BOOLEAN DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Enable RLS
+ALTER TABLE custom_sections ENABLE ROW LEVEL SECURITY;
+
+-- RLS Policies for custom_sections
+CREATE POLICY "Users can manage their own custom sections"
+  ON custom_sections FOR ALL
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Allow public to view custom sections for users with active cards
+CREATE POLICY "Public can view custom sections for active cards"
+  ON custom_sections FOR SELECT
+  USING (
+    is_active = true AND
+    user_id IN (
+      SELECT DISTINCT user_id 
+      FROM business_cards 
+      WHERE is_active = true
+    )
+  );
+
+-- Create index for better performance
+CREATE INDEX IF NOT EXISTS idx_custom_sections_user_id ON custom_sections(user_id);
+CREATE INDEX IF NOT EXISTS idx_custom_sections_display_order ON custom_sections(user_id, display_order);
+
+-- Trigger for updated_at
+CREATE TRIGGER update_custom_sections_updated_at BEFORE UPDATE ON custom_sections
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

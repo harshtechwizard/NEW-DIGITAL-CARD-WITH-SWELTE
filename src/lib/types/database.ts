@@ -270,6 +270,38 @@ export interface Database {
 					created_at?: string;
 				};
 			};
+			custom_sections: {
+				Row: {
+					id: string;
+					user_id: string;
+					title: string;
+					content: string;
+					display_order: number | null;
+					is_active: boolean;
+					created_at: string;
+					updated_at: string;
+				};
+				Insert: {
+					id?: string;
+					user_id: string;
+					title: string;
+					content: string;
+					display_order?: number | null;
+					is_active?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+				Update: {
+					id?: string;
+					user_id?: string;
+					title?: string;
+					content?: string;
+					display_order?: number | null;
+					is_active?: boolean;
+					created_at?: string;
+					updated_at?: string;
+				};
+			};
 			business_cards: {
 				Row: {
 					id: string;
@@ -373,6 +405,7 @@ export type Education = Tables<'education'>;
 export type Award = Tables<'awards'>;
 export type ProductService = Tables<'products_services'>;
 export type PhotoGallery = Tables<'photo_gallery'>;
+export type CustomSection = Tables<'custom_sections'>;
 export type BusinessCard = Tables<'business_cards'>;
 export type CardAnalytics = Tables<'card_analytics'>;
 
@@ -415,6 +448,7 @@ export interface UserProfile {
 	awards: Award[];
 	products_services: ProductService[];
 	photo_gallery: PhotoGallery[];
+	custom_sections?: CustomSection[];
 }
 
 /**

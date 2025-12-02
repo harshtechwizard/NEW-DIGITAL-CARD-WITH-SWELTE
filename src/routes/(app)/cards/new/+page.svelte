@@ -48,7 +48,8 @@
 		educationIds: [] as string[],
 		awardIds: [] as string[],
 		productServiceIds: [] as string[],
-		photoIds: [] as string[]
+		photoIds: [] as string[],
+		customSectionIds: [] as string[]
 	});
 
 	// Design configuration state
@@ -106,6 +107,12 @@
 			: [...selectedFields.awardIds, awardId];
 	}
 
+	function toggleCustomSection(sectionId: string) {
+		selectedFields.customSectionIds = selectedFields.customSectionIds.includes(sectionId)
+			? selectedFields.customSectionIds.filter((id) => id !== sectionId)
+			: [...selectedFields.customSectionIds, sectionId];
+	}
+
 	// Note: toggleProductService and togglePhoto functions will be used when
 	// products/services and photo gallery sections are added to the UI
 
@@ -118,25 +125,31 @@
 		isSubmitting = true;
 		error = '';
 
+		const payload = {
+			name: cardName,
+			slug: '', // Will be generated server-side
+			template_type: templateType,
+			fields_config: selectedFields,
+			design_config: designConfig
+		};
+
+		console.log('📤 Creating card with payload:', payload);
+
 		try {
 			const response = await fetch('/api/cards', {
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({
-					name: cardName,
-					slug: '', // Will be generated server-side
-					template_type: templateType,
-					fields_config: selectedFields,
-					design_config: designConfig
-				})
+				body: JSON.stringify(payload)
 			});
 
 			const result = await response.json();
 
 			if (!response.ok) {
-				error = result.error || 'Failed to create card';
+				// Show detailed error message
+				error = result.message || result.error || 'Failed to create card';
+				console.error('❌ Card creation failed:', result);
 				return;
 			}
 
@@ -473,6 +486,38 @@
 									</div>
 								{/if}
 							</div>
+
+							<!-- Custom Sections -->
+							<div>
+								<h3 class="font-semibold mb-3">Custom Sections</h3>
+								{#if !data.customSections || data.customSections.length === 0}
+									<p class="text-sm text-muted-foreground">
+										No custom sections yet. <a href="/profile" class="text-primary hover:underline">Create them in your profile</a>.
+									</p>
+								{:else}
+									<div class="space-y-2">
+										{#each data.customSections.filter(s => s.is_active) as section (section.id)}
+											<div class="flex items-center space-x-2">
+												<Checkbox
+													name={`section-${section.id}`}
+													checked={selectedFields.customSectionIds.includes(section.id)}
+													onchange={() => toggleCustomSection(section.id)}
+												/>
+												<Label for={`section-${section.id}`}>
+													{#snippet children()}
+														<div class="flex flex-col">
+															<span class="text-sm font-medium">{section.title}</span>
+															<span class="text-xs text-muted-foreground line-clamp-1">
+																{section.content.replace(/<[^>]*>/g, '').substring(0, 60)}...
+															</span>
+														</div>
+													{/snippet}
+												</Label>
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
 						</div>
 					</CardContent>
 				</Card>
@@ -571,6 +616,7 @@
 							professionalInfo={data.professionalInfo}
 							education={data.education.filter(e => selectedFields.educationIds.includes(e.id))}
 							awards={data.awards.filter(a => selectedFields.awardIds.includes(a.id))}
+							customSections={data.customSections?.filter(s => selectedFields.customSectionIds.includes(s.id)) || []}
 							fieldsConfig={selectedFields}
 							designConfig={designConfig}
 							templateType={templateType}
