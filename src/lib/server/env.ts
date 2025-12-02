@@ -40,10 +40,10 @@ export function validateEnv(): EnvConfig {
 		'PUBLIC_SUPABASE_ANON_KEY'
 	];
 
-	// In production, also require service role key, Redis and Sentry
+	// In production, also require service role key (Redis and Sentry are optional)
 	const productionRequiredVars = dev 
 		? [] 
-		: ['SUPABASE_SERVICE_ROLE_KEY', 'UPSTASH_REDIS_URL', 'UPSTASH_REDIS_TOKEN'];
+		: ['SUPABASE_SERVICE_ROLE_KEY'];
 
 	const allRequiredVars = [...requiredVars, ...productionRequiredVars];
 
@@ -70,7 +70,8 @@ export function validateEnv(): EnvConfig {
 		throw new Error('PUBLIC_SUPABASE_URL must be a valid URL');
 	}
 
-	if (!dev && allEnv.UPSTASH_REDIS_URL) {
+	// Validate Redis URL if provided
+	if (allEnv.UPSTASH_REDIS_URL) {
 		try {
 			new URL(allEnv.UPSTASH_REDIS_URL);
 		} catch {
@@ -92,15 +93,19 @@ export function validateEnv(): EnvConfig {
 
 	if (dev) {
 		console.log('  Running in development mode');
-		if (!allEnv.SUPABASE_SERVICE_ROLE_KEY) {
-			console.log('  ⚠ Service role key not configured (some admin features disabled)');
-		}
-		if (!allEnv.UPSTASH_REDIS_URL) {
-			console.log('  ⚠ Redis not configured (rate limiting disabled)');
-		}
-		if (!allEnv.SENTRY_DSN) {
-			console.log('  ⚠ Sentry not configured (error tracking disabled)');
-		}
+	} else {
+		console.log('  Running in production mode');
+	}
+	
+	// Log optional features status
+	if (!allEnv.SUPABASE_SERVICE_ROLE_KEY) {
+		console.log('  ⚠ Service role key not configured (some admin features disabled)');
+	}
+	if (!allEnv.UPSTASH_REDIS_URL) {
+		console.log('  ⚠ Redis not configured (rate limiting disabled)');
+	}
+	if (!allEnv.SENTRY_DSN) {
+		console.log('  ⚠ Sentry not configured (error tracking disabled)');
 	}
 
 	return {
