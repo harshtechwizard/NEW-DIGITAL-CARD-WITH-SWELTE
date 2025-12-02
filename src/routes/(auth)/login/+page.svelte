@@ -40,7 +40,8 @@
 	{/if}
 	
 	<form 
-		method="POST" 
+		method="POST"
+		action="?/login"
 		use:enhance={() => {
 			if (!handleClientValidation()) {
 				return ({ update }) => update({ reset: false });

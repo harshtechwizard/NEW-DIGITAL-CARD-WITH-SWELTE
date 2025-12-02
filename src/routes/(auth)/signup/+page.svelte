@@ -87,7 +87,8 @@
 		</div>
 	{:else}
 		<form 
-			method="POST" 
+			method="POST"
+			action="?/signup"
 			use:enhance={() => {
 				if (!handleClientValidation()) {
 					return ({ update }) => update({ reset: false });

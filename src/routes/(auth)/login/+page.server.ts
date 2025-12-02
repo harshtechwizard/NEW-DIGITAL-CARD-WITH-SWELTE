@@ -25,9 +25,9 @@ export const load: PageServerLoad = async ({ locals }) => {
  */
 export const actions: Actions = {
 	/**
-	 * Default action - email/password login
+	 * Login action - email/password login
 	 */
-	default: async ({ request, locals, getClientAddress }) => {
+	login: async ({ request, locals, getClientAddress }) => {
 		const ip = getClientAddress();
 		
 		// Rate limiting: 5 attempts per 15 minutes (900 seconds)
