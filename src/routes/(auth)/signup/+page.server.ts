@@ -28,26 +28,24 @@ export const actions: Actions = {
 	/**
 	 * Signup action - email/password signup
 	 */
-	signup: async ({ request, locals, getClientAddress }) => {
-		const ip = getClientAddress();
+	signup: async ({ request, locals }) => {
+		// Parse form data first to get email
+		const formData = await request.formData();
+		const email = formData.get('email')?.toString() || '';
+		const password = formData.get('password')?.toString();
+		const confirmPassword = formData.get('confirmPassword')?.toString();
+		const acceptTerms = formData.get('acceptTerms') === 'on';
 		
-		// Rate limiting: 3 attempts per 15 minutes (900 seconds)
-		const rateLimitResult = await rateLimit(ip, 'signup', 3, 900);
+		// Rate limiting: 3 attempts per 15 minutes (900 seconds) per email
+		const rateLimitResult = await rateLimit(email.toLowerCase(), 'signup', 3, 900);
 		
 		if (!rateLimitResult.allowed) {
 			const minutes = Math.ceil(rateLimitResult.retryAfter / 60);
 			return fail(429, {
-				error: `Too many signup attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
-				email: ''
+				error: `Too many signup attempts for this email. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+				email: email
 			});
 		}
-		
-		// Parse form data
-		const formData = await request.formData();
-		const email = formData.get('email')?.toString();
-		const password = formData.get('password')?.toString();
-		const confirmPassword = formData.get('confirmPassword')?.toString();
-		const acceptTerms = formData.get('acceptTerms') === 'on';
 		
 		// Validate input with Zod
 		const validation = signupSchema.safeParse({ 

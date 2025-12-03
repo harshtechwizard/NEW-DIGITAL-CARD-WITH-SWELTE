@@ -27,24 +27,22 @@ export const actions: Actions = {
 	/**
 	 * Login action - email/password login
 	 */
-	login: async ({ request, locals, getClientAddress }) => {
-		const ip = getClientAddress();
+	login: async ({ request, locals }) => {
+		// Parse form data first to get email
+		const formData = await request.formData();
+		const email = formData.get('email')?.toString() || '';
+		const password = formData.get('password')?.toString();
 		
-		// Rate limiting: 5 attempts per 15 minutes (900 seconds)
-		const rateLimitResult = await rateLimit(ip, 'login', 5, 900);
+		// Rate limiting: 5 attempts per 15 minutes (900 seconds) per email
+		const rateLimitResult = await rateLimit(email.toLowerCase(), 'login', 5, 900);
 		
 		if (!rateLimitResult.allowed) {
 			const minutes = Math.ceil(rateLimitResult.retryAfter / 60);
 			return fail(429, {
-				error: `Too many login attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
-				email: ''
+				error: `Too many login attempts for this email. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+				email: email
 			});
 		}
-		
-		// Parse form data
-		const formData = await request.formData();
-		const email = formData.get('email')?.toString();
-		const password = formData.get('password')?.toString();
 		
 		// Validate input with Zod
 		const validation = loginSchema.safeParse({ email, password });
@@ -75,7 +73,7 @@ export const actions: Actions = {
 		}
 		
 		// Clear rate limit on successful login
-		resetRateLimit(ip, 'login');
+		resetRateLimit(validation.data.email.toLowerCase(), 'login');
 		
 		// Redirect to dashboard
 		throw redirect(303, '/dashboard');

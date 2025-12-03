@@ -19,23 +19,21 @@ export const load: PageServerLoad = async () => {
  * - Doesn't reveal if email exists (security best practice)
  */
 export const actions: Actions = {
-	default: async ({ request, locals, getClientAddress }) => {
-		const ip = getClientAddress();
+	default: async ({ request, locals }) => {
+		// Parse form data first to get email
+		const formData = await request.formData();
+		const email = formData.get('email')?.toString() || '';
 		
-		// Rate limiting: 3 attempts per 15 minutes
-		const rateLimitResult = await rateLimit(ip, 'password-reset', 3, 900);
+		// Rate limiting: 3 attempts per 15 minutes per email
+		const rateLimitResult = await rateLimit(email.toLowerCase(), 'password-reset', 3, 900);
 		
 		if (!rateLimitResult.allowed) {
 			const minutes = Math.ceil(rateLimitResult.retryAfter / 60);
 			return fail(429, {
-				error: `Too many reset attempts. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
-				email: ''
+				error: `Too many reset attempts for this email. Please try again in ${minutes} minute${minutes > 1 ? 's' : ''}.`,
+				email: email
 			});
 		}
-		
-		// Parse form data
-		const formData = await request.formData();
-		const email = formData.get('email')?.toString();
 		
 		// Validate input
 		const validation = passwordResetRequestSchema.safeParse({ email });
