@@ -102,7 +102,7 @@ export async function generateUniqueSlug(
 
 /**
  * Generate a unique slug with atomic operation
- * This version uses a database transaction to ensure atomicity
+ * This version uses a database function to ensure true atomicity
  * 
  * @param supabase - Supabase client instance
  * @param cardName - The card name to generate slug from
@@ -123,34 +123,20 @@ export async function generateUniqueSlugAtomic(
 		throw new Error('Invalid slug format: must contain only lowercase letters, numbers, and hyphens');
 	}
 
-	// Try base slug first
-	let candidateSlug = baseSlug;
-	let attempt = 0;
-	const maxAttempts = 10;
+	// Call database function for atomic slug generation
+	const { data, error } = await supabase.rpc('generate_unique_slug', {
+		base_slug: baseSlug,
+		max_attempts: 10
+	});
 
-	while (attempt < maxAttempts) {
-		// Check if slug exists
-		const { data, error } = await supabase
-			.from('business_cards')
-			.select('slug')
-			.eq('slug', candidateSlug)
-			.maybeSingle();
-
-		if (error) {
-			console.error('Error checking slug:', error);
-			throw new Error('Database error while checking slug uniqueness');
-		}
-
-		// If slug doesn't exist, return it
-		if (!data) {
-			return candidateSlug;
-		}
-
-		// Generate new candidate with random suffix
-		const suffix = generateRandomSuffix();
-		candidateSlug = `${baseSlug}-${suffix}`;
-		attempt++;
+	if (error) {
+		console.error('Error generating unique slug:', error);
+		throw new Error(`Failed to generate unique slug: ${error.message}`);
 	}
 
-	throw new Error(`Unable to generate unique slug after ${maxAttempts} attempts`);
+	if (!data) {
+		throw new Error('Slug generation returned no result');
+	}
+
+	return data as string;
 }

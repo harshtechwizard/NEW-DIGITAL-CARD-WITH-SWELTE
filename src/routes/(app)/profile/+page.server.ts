@@ -10,6 +10,7 @@ import {
 	customSectionSchema
 } from '$lib/server/validation';
 import { sanitizeContent, validateContentSize } from '$lib/server/sanitize';
+import { retryDatabaseOperation, VersionConflictError } from '$lib/server/retry';
 import type { UserProfile } from '$lib/types/database';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -61,6 +62,8 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const data = Object.fromEntries(formData);
+		const version = data.version ? parseInt(data.version as string) : 0;
+		delete data.version;
 
 		// Validate input
 		const validation = personalInfoSchema.safeParse(data);
@@ -70,48 +73,78 @@ export const actions: Actions = {
 			});
 		}
 
-		// Clean data: convert empty strings to null for optional fields
-		const cleanedData: any = {};
-		for (const [key, value] of Object.entries(validation.data)) {
-			if (value === '' || value === null || value === undefined) {
-				cleanedData[key] = null;
-			} else {
-				cleanedData[key] = value;
+		try {
+			// Use database function for optimistic locking
+			const result = await retryDatabaseOperation(async () => {
+				const { data: rpcData, error: rpcError } = await locals.supabase.rpc(
+					'upsert_personal_info_optimistic',
+					{
+						p_user_id: locals.user!.id,
+						p_expected_version: version,
+						p_full_name: validation.data.full_name,
+						p_date_of_birth: validation.data.date_of_birth || null,
+						p_primary_email: validation.data.primary_email || null,
+						p_secondary_email: validation.data.secondary_email || null,
+						p_mobile_number: validation.data.mobile_number || null,
+						p_phone_number: validation.data.phone_number || null,
+						p_whatsapp_number: validation.data.whatsapp_number || null,
+						p_home_address: null, // Not in schema yet
+						p_bio: validation.data.bio || null,
+						p_profile_photo_url: validation.data.profile_photo_url || null,
+						p_instagram_url: validation.data.instagram_url || null,
+						p_facebook_url: validation.data.facebook_url || null,
+						p_linkedin_url: validation.data.linkedin_url || null
+					}
+				);
+
+				if (rpcError) {
+					throw rpcError;
+				}
+
+				return rpcData;
+			}, 'save personal info');
+
+			if (!result || result.length === 0) {
+				return fail(500, { error: 'Failed to save personal information' });
 			}
+
+			const saveResult = result[0];
+
+			if (!saveResult.success) {
+				// Version conflict
+				if (saveResult.message.includes('Version conflict')) {
+					return fail(409, {
+						error: 'Version conflict',
+						message: saveResult.message,
+						currentVersion: saveResult.new_version,
+						details: 'Your data was modified in another session. Please refresh and try again.'
+					});
+				}
+
+				return fail(500, { error: saveResult.message });
+			}
+
+			return {
+				success: true,
+				message: saveResult.message,
+				version: saveResult.new_version,
+				isNew: saveResult.is_new
+			};
+		} catch (err: any) {
+			console.error('Error saving personal info:', err);
+
+			if (err.message?.includes('version conflict') || err.message?.includes('Version conflict')) {
+				return fail(409, {
+					error: 'Version conflict',
+					details: 'Your data was modified in another session. Please refresh and try again.'
+				});
+			}
+
+			return fail(500, {
+				error: 'Failed to save personal information',
+				details: err.message
+			});
 		}
-
-		// Check if personal info exists
-		const { data: existing } = await locals.supabase
-			.from('personal_info')
-			.select('id')
-			.eq('user_id', locals.user.id)
-			.maybeSingle();
-
-		if (existing) {
-			// Update existing
-			const { error } = await locals.supabase
-				.from('personal_info')
-				.update(cleanedData)
-				.eq('user_id', locals.user.id);
-
-			if (error) {
-				return fail(500, { error: `Failed to update: ${error.message}` });
-			}
-		} else {
-			// Insert new
-			const { error } = await locals.supabase
-				.from('personal_info')
-				.insert({ ...cleanedData, user_id: locals.user.id });
-
-			if (error) {
-				return fail(500, { error: `Failed to save: ${error.message}` });
-			}
-		}
-
-		return {
-			success: true,
-			message: 'Personal information saved successfully'
-		};
 	},
 
 	saveProfessionalInfo: async ({ request, locals }) => {
@@ -121,8 +154,10 @@ export const actions: Actions = {
 
 		const formData = await request.formData();
 		const id = formData.get('id')?.toString();
+		const version = formData.get('version') ? parseInt(formData.get('version') as string) : 1;
 		const data = Object.fromEntries(formData);
 		delete data.id;
+		delete data.version;
 
 		// Validate input
 		const validation = professionalInfoSchema.safeParse(data);
@@ -142,29 +177,91 @@ export const actions: Actions = {
 			}
 		}
 
-		if (id) {
-			// Update existing
-			const { error } = await locals.supabase
-				.from('professional_info')
-				.update(cleanedData)
-				.eq('id', id)
-				.eq('user_id', locals.user.id);
+		try {
+			if (id) {
+				// Update existing with optimistic locking
+				const result = await retryDatabaseOperation(async () => {
+					// First check current version
+					const { data: current, error: fetchError } = await locals.supabase
+						.from('professional_info')
+						.select('version')
+						.eq('id', id)
+						.eq('user_id', locals.user!.id)
+						.single();
 
-			if (error) {
-				return fail(500, { error: `Failed to update: ${error.message}` });
-			}
-		} else {
-			// Insert new
-			const { error } = await locals.supabase
-				.from('professional_info')
-				.insert({ ...cleanedData, user_id: locals.user.id });
+					if (fetchError || !current) {
+						throw new Error('Professional info not found');
+					}
 
-			if (error) {
-				return fail(500, { error: `Failed to save: ${error.message}` });
+					if (current.version !== version) {
+						throw new VersionConflictError(
+							'Professional info was modified by another session',
+							current.version
+						);
+					}
+
+					// Update with version check
+					const { data: updated, error: updateError } = await locals.supabase
+						.from('professional_info')
+						.update(cleanedData)
+						.eq('id', id)
+						.eq('user_id', locals.user!.id)
+						.eq('version', version)
+						.select()
+						.single();
+
+					if (updateError) {
+						throw updateError;
+					}
+
+					if (!updated) {
+						throw new VersionConflictError('Version conflict during update');
+					}
+
+					return updated;
+				}, 'update professional info');
+
+				return {
+					success: true,
+					message: 'Professional information updated successfully',
+					version: result.version
+				};
+			} else {
+				// Insert new
+				const { data: inserted, error } = await locals.supabase
+					.from('professional_info')
+					.insert({ ...cleanedData, user_id: locals.user.id, version: 1 })
+					.select()
+					.single();
+
+				if (error) {
+					return fail(500, { error: `Failed to save: ${error.message}` });
+				}
+
+				return {
+					success: true,
+					message: 'Professional information saved successfully',
+					id: inserted.id,
+					version: inserted.version
+				};
 			}
+		} catch (err: any) {
+			console.error('Error saving professional info:', err);
+
+			if (err instanceof VersionConflictError) {
+				return fail(409, {
+					error: 'Version conflict',
+					message: err.message,
+					currentVersion: err.currentVersion,
+					details: 'Your data was modified in another session. Please refresh and try again.'
+				});
+			}
+
+			return fail(500, {
+				error: 'Failed to save professional information',
+				details: err.message
+			});
 		}
-
-		return { success: true, message: 'Professional information saved successfully' };
 	},
 
 	deleteProfessionalInfo: async ({ request, locals }) => {
