@@ -24,6 +24,7 @@
 		"@lucide/svelte": "^0.555.0",
 		"@playwright/test": "^1.57.0",
 		"@sveltejs/adapter-auto": "^7.0.0",
+		"@sveltejs/adapter-node": "^5.0.0",
 		"@sveltejs/kit": "^2.48.5",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@tailwindcss/postcss": "^4.1.17",
