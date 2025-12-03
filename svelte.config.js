@@ -1,4 +1,4 @@
-import adapter from '@sveltejs/adapter-vercel';
+import adapter from '@sveltejs/adapter-node';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
 /** @type {import('@sveltejs/kit').Config} */
@@ -8,16 +8,9 @@ const config = {
 	preprocess: vitePreprocess(),
 
 	kit: {
-		// Vercel adapter with optimized configuration
-		// Note: Routes can specify their own runtime via export const config
+		// Node adapter for Dokploy/self-hosted deployment
 		adapter: adapter({
-			// Default to Node.js runtime for compatibility
-			// Individual routes can opt into edge runtime
-			// Regions for deployment (optional, defaults to all)
-			regions: ['iad1'], // US East, adjust based on your target audience
-			// Memory and timeout settings
-			memory: 1024,
-			maxDuration: 10
+			out: 'build'
 		}),
 
 		// Content Security Policy and security headers
