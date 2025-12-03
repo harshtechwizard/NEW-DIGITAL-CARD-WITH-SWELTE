@@ -18,9 +18,9 @@ import { trackCardView } from '$lib/server/analytics';
  * Requirements: 1.1, 1.2, 1.5, 7.2, 7.3, 15.3
  */
 
-// Use edge runtime for optimal performance on public pages
+// Use nodejs runtime for analytics compatibility
 export const config = {
-	runtime: 'edge'
+	runtime: 'nodejs'
 };
 
 export const load: PageServerLoad = async ({ params, locals, request, getClientAddress, setHeaders, url }) => {
