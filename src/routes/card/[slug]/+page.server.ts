@@ -20,7 +20,7 @@ import { trackCardView } from '$lib/server/analytics';
 
 // Use nodejs runtime for analytics compatibility
 export const config = {
-	runtime: 'nodejs'
+	runtime: 'nodejs20.x'
 };
 
 export const load: PageServerLoad = async ({ params, locals, request, getClientAddress, setHeaders, url }) => {
